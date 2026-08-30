@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import get_current_user
 from app.models.analysis import Analysis
 
 
@@ -10,10 +11,12 @@ router = APIRouter()
 
 @router.get("/analyses")
 def get_all_analyses(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
     analyses = (
         db.query(Analysis)
+        .filter(Analysis.user_id == int(current_user))
         .order_by(Analysis.created_at.desc())
         .all()
     )

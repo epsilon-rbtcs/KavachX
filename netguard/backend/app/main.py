@@ -5,6 +5,7 @@ from app.api.routes.upload import router as upload_router
 from app.api.routes.analysis import router as analysis_router
 from app.api.routes import states
 from app.api.routes import analyses
+from app.api.routes import auth
 
 app = FastAPI(
     title="AI Network Attack Forecasting API",
@@ -38,6 +39,10 @@ app.include_router(
     prefix="/api"
 )
 
+app.include_router(
+    auth.router,
+    prefix="/api"
+)
 
 @app.get("/")
 def root():

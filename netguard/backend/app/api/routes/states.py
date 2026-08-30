@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import get_current_user
 from app.models.analysis import Analysis
 from app.models.network_state import NetworkState
 
@@ -12,11 +13,18 @@ router = APIRouter()
 @router.get("/analyses/{analysis_id}/states")
 def get_network_states(
     analysis_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
 
-    # Check analysis exists
-    analysis = db.get(Analysis, analysis_id)
+    analysis = (
+        db.query(Analysis)
+        .filter(
+            Analysis.id == analysis_id,
+            Analysis.user_id == int(current_user)
+        )
+        .first()
+    )
 
     if not analysis:
         raise HTTPException(
@@ -24,7 +32,6 @@ def get_network_states(
             detail="Analysis ID not found"
         )
 
-    # Get states in chronological order
     states = (
         db.query(NetworkState)
         .filter(NetworkState.analysis_id == analysis_id)
