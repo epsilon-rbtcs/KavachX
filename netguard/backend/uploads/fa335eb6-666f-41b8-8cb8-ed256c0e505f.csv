@@ -1,0 +1,4 @@
+timestamp,source_port,destination_port,protocol,packet_count,bytes
+10:00:01,1234,80,TCP,10,1200
+10:00:02,1235,443,TCP,15,1800
+10:00:03,1236,22,TCP,20,2400
