@@ -4,6 +4,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import get_current_user
 from app.models.analysis import Analysis
 from app.models.network_state import NetworkState
 
@@ -23,14 +24,20 @@ UPLOAD_DIR = Path("uploads")
 @router.post("/analyses/{analysis_id}/run")
 def run_analysis(
     analysis_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
 
-    # --------------------------------
-    # 1. Check analysis exists
-    # --------------------------------
+    # 1. Check analysis exists AND belongs to current user
 
-    analysis = db.get(Analysis, analysis_id)
+    analysis = (
+        db.query(Analysis)
+        .filter(
+            Analysis.id == analysis_id,
+            Analysis.user_id == int(current_user)
+        )
+        .first()
+    )
 
     if not analysis:
         raise HTTPException(
@@ -38,9 +45,7 @@ def run_analysis(
             detail="Analysis ID not found"
         )
 
-    # --------------------------------
     # 2. Find uploaded CSV
-    # --------------------------------
 
     matching_files = list(
         UPLOAD_DIR.glob(f"{analysis_id}.*")
@@ -54,9 +59,7 @@ def run_analysis(
 
     file_path = matching_files[0]
 
-    # --------------------------------
     # 3. Currently support CSV
-    # --------------------------------
 
     if file_path.suffix.lower() != ".csv":
         raise HTTPException(
@@ -64,9 +67,7 @@ def run_analysis(
             detail="Currently only CSV analysis is supported"
         )
 
-    # --------------------------------
     # 4. Load CSV
-    # --------------------------------
 
     try:
         df = load_csv(str(file_path))
@@ -76,9 +77,7 @@ def run_analysis(
             detail=f"Unable to read CSV: {str(e)}"
         )
 
-    # --------------------------------
     # 5. Validate CSV
-    # --------------------------------
 
     validation = validate_csv(df)
 
@@ -91,9 +90,7 @@ def run_analysis(
             }
         )
 
-    # --------------------------------
     # 6. Extract features
-    # --------------------------------
 
     features = extract_features(df)
 
@@ -103,9 +100,7 @@ def run_analysis(
             detail="No valid traffic records found"
         )
 
-    # --------------------------------
     # 7. Create network states
-    # --------------------------------
 
     states = create_network_states(features)
 
@@ -115,19 +110,13 @@ def run_analysis(
             detail="Unable to create network states"
         )
 
-    # --------------------------------
     # 8. Remove old states
-    # --------------------------------
-    # Prevent duplicate states if the
-    # same analysis is run again.
 
     db.query(NetworkState).filter(
         NetworkState.analysis_id == analysis_id
     ).delete()
 
-    # --------------------------------
     # 9. Save network states
-    # --------------------------------
 
     for _, state in states.iterrows():
 
@@ -175,21 +164,15 @@ def run_analysis(
 
         db.add(network_state)
 
-    # --------------------------------
     # 10. Update analysis status
-    # --------------------------------
 
     analysis.status = "processed"
 
-    # --------------------------------
-    # 11. Commit everything
-    # --------------------------------
+    # 11. Commit
 
     db.commit()
 
-    # --------------------------------
     # 12. Return response
-    # --------------------------------
 
     return {
         "analysis_id": analysis_id,
