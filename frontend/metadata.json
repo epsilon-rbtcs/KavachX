@@ -1,0 +1,6 @@
+{
+  "name": "National IoT Firmware Safety and Compliance Portal",
+  "description": "An official Indian Government portal for IoT manufacturers to anonymously submit firmware images for automated safety verification and security compliance analysis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

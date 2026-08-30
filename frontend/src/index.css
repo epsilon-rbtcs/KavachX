@@ -1,0 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.cdnfonts.com/css/glacial-indifference');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --font-noto: "Noto Sans", sans-serif;
+  --font-glacial: "Glacial Indifference", "Inter", sans-serif;
+  
+  --color-gov-blue-dark: #001f3f;
+  --color-gov-blue: #002d62;
+  --color-gov-blue-light: #4682b4;
+  --color-gov-saffron: #f4c430;
+  --color-gov-saffron-dark: #ff671f;
+  --color-gov-ash: #f4f5f7;
+  --color-ash: #f8fafc;
+}
+
+/* Accessibility settings for high contrast mode */
+.high-contrast {
+  --color-gov-blue-dark: #000000 !important;
+  --color-gov-blue: #000000 !important;
+  --color-gov-blue-light: #ffffff !important;
+  --color-gov-saffron: #ffff00 !important;
+  --color-gov-saffron-dark: #ffea00 !important;
+  --color-gov-ash: #121212 !important;
+  --color-ash: #000000 !important;
+  
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.high-contrast input, 
+.high-contrast select, 
+.high-contrast textarea {
+  background-color: #000000 !important;
+  border: 2px solid #ffffff !important;
+  color: #ffffff !important;
+}
+
+.high-contrast button {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #ffffff !important;
+}
+
+.high-contrast button:hover {
+  background-color: #ffff00 !important;
+  color: #000000 !important;
+}
+
+.high-contrast .card {
+  background-color: #000000 !important;
+  border: 2px solid #ffffff !important;
+  color: #ffffff !important;
+}
+
+.high-contrast text,
+.high-contrast svg {
+  stroke: #ffffff !important;
+}
+
+/* New Extensible Accessibility Option Styles */
+.saturate-mono {
+  filter: grayscale(100%) !important;
+}
+
+.saturate-high {
+  filter: saturate(200%) !important;
+}
+
+.inverted-mode {
+  filter: invert(100%) hue-rotate(180deg) !important;
+}
+
+.light-contrast-mode {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+.light-contrast-mode * {
+  border-color: #000000 !important;
+  color: #000000 !important;
+}
+
+.light-contrast-mode button, 
+.light-contrast-mode select, 
+.light-contrast-mode input {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+}
+
+/* Highlight Links State overrides */
+.highlight-links a,
+.highlight-links-active a,
+.highlight-links-active button,
+.highlight-links-active [role="button"] {
+  background-color: #ffeb3b !important;
+  color: #000000 !important;
+  outline: 3px solid #000000 !important;
+  text-decoration: underline !important;
+  font-weight: bold !important;
+}
+
+/* Hide Images implementation */
+.hide-images img,
+.hide-images-active img,
+.hide-images-active svg:not(.acc-control-icon) {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* SVG Line drawing animation on page load */
+@keyframes drawLineAnimation {
+  from {
+    stroke-dashoffset: 1200;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fadeInFillAnimation {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Base style for self-drawing Area line chart */
+.draw-self-line .recharts-area-curve {
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 1200;
+  animation: drawLineAnimation 3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.draw-self-line .recharts-area-area {
+  opacity: 0;
+  animation: fadeInFillAnimation 2s cubic-bezier(0.25, 1, 0.5, 1) 2.2s forwards;
+}
+
+
+
