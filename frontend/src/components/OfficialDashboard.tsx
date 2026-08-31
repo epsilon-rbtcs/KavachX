@@ -429,10 +429,13 @@ export default function OfficialDashboard({
       const formData = new FormData();
       formData.append("file", selectedFile);
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+     const response = await fetch("/api/upload", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem("kavachx_access_token")}`,
+  },
+  body: formData,
+});
 
       if (response.ok) {
         backendData = await response.json();
@@ -1644,7 +1647,7 @@ export default function OfficialDashboard({
               </div>
             </div>
 
-            {/* TRAJECTORY */}
+                {/* TRAJECTORY */}
             <div className="rounded-2xl border border-slate-200 p-5 mb-6">
               <h3 className="text-xs font-black uppercase tracking-widest mb-5">
                 ATT&CK TRAJECTORY
@@ -1655,10 +1658,8 @@ export default function OfficialDashboard({
                   "Reconnaissance",
                   "Initial Access",
                   "Discovery",
-                  activeReport.predictedStage ||
-                    "Lateral Movement",
-                  "Command & Control",
-                ].map((stage, index) => (
+                  activeReport.predictedStage || "Command & Control",
+                ].map((stage, index, stages) => (
                   <React.Fragment key={`${stage}-${index}`}>
                     <div
                       className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase ${
@@ -1670,7 +1671,7 @@ export default function OfficialDashboard({
                       {stage}
                     </div>
 
-                    {index < 4 && (
+                    {index < stages.length - 1 && (
                       <span className="text-slate-300">
                         →
                       </span>

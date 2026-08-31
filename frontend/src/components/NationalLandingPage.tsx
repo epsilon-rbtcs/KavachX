@@ -7,6 +7,8 @@ import {
   LayoutDashboard,
   FileSearch,
   LockKeyhole,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 
 type Props = {
@@ -40,24 +42,140 @@ export default function NationalLandingPage({
   onGoToAuditLogs,
 }: Props) {
   const [showLogin, setShowLogin] = useState(false);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginError, setLoginError] = useState("");
+
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!email.trim() || !password.trim()) {
+    const identifier = email.trim();
+    const enteredPassword = password;
+
+    if (!identifier || !enteredPassword) {
+      setLoginError("Please enter your email/username and password.");
       return;
     }
 
-    onLogin(email.trim());
+    setIsLoggingIn(true);
+    setLoginError("");
+
+    try {
+      /*
+       * The backend login endpoint currently accepts:
+       *
+       * POST /api/auth/login
+       *
+       * {
+       *   username: "...",
+       *   password: "..."
+       * }
+       *
+       * We first try the value entered by the user as the username.
+       * This supports the current backend configuration where the
+       * login identifier may be an email address.
+       */
+
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: identifier,
+          password: enteredPassword,
+        }),
+      });
+
+      let responseData: any = null;
+
+      try {
+        responseData = await response.json();
+      } catch {
+        responseData = null;
+      }
+
+      if (!response.ok) {
+        const message =
+          responseData?.detail ||
+          responseData?.message ||
+          "Invalid username/email or password.";
+
+        throw new Error(message);
+      }
+
+      const accessToken = responseData?.access_token;
+
+      if (!accessToken) {
+        throw new Error(
+          "Login succeeded, but the server did not return an access token."
+        );
+      }
+
+      /*
+       * Store the JWT so the dashboard/API requests can use it.
+       */
+      localStorage.setItem("kavachx_access_token", accessToken);
+
+      /*
+       * Keep the user's identifier available locally.
+       */
+      localStorage.setItem("kavachx_user_email", identifier);
+
+      /*
+       * Tell App.tsx that authentication succeeded.
+       */
+      onLogin(identifier);
+
+      setShowLogin(false);
+      setPassword("");
+      setLoginError("");
+    } catch (error) {
+      console.error("KavachX login failed:", error);
+
+      if (error instanceof Error) {
+        setLoginError(error.message);
+      } else {
+        setLoginError("Unable to authenticate with the backend.");
+      }
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("kavachx_access_token");
+    localStorage.removeItem("kavachx_user_email");
+
+    setEmail("");
+    setPassword("");
+    setLoginError("");
     setShowLogin(false);
+
+    onLogout();
+  };
+
+  const openLogin = () => {
+    setLoginError("");
+    setShowLogin(true);
+  };
+
+  const closeLogin = () => {
+    if (isLoggingIn) {
+      return;
+    }
+
+    setShowLogin(false);
+    setLoginError("");
     setPassword("");
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden text-white">
-      {/* BACKGROUND */}
+    <div className="min-h-screen relative overflow-hidden text-white bg-[#031633]">
+      {/* BACKGROUND IMAGE */}
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{
@@ -69,8 +187,8 @@ export default function NationalLandingPage({
       {/* DARK NAVY OVERLAY */}
       <div className="absolute inset-0 bg-[#031633]/85" />
 
-      {/* SUBTLE BLUE GRADIENT */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#061d3f]/30 via-[#031633]/30 to-[#020b19]/90" />
+      {/* BLUE GRADIENT */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#061d3f]/30 via-[#031633]/40 to-[#020b19]/95" />
 
       {/* CONTENT */}
       <div className="relative z-10 min-h-screen flex flex-col">
@@ -86,26 +204,28 @@ export default function NationalLandingPage({
               <div className="font-bold tracking-widest text-sm">
                 KAVACHX
               </div>
+
               <div className="text-[10px] text-blue-200 tracking-[0.25em]">
                 NETWORK SECURITY PLATFORM
               </div>
             </div>
           </div>
 
-          {isLoggedIn ? (
+          {isLoggedIn && (
             <div className="flex items-center gap-3">
               <span className="hidden md:block text-xs text-blue-100">
                 {userEmail}
               </span>
 
               <button
-                onClick={onLogout}
+                type="button"
+                onClick={handleLogout}
                 className="px-4 py-2 text-xs border border-white/30 rounded-md bg-white/10 hover:bg-white/20 transition"
               >
                 Logout
               </button>
             </div>
-          ) : null}
+          )}
         </header>
 
         {/* MAIN */}
@@ -134,7 +254,7 @@ export default function NationalLandingPage({
               </span>
             </div>
 
-            {/* ORANGE / GREEN LINE */}
+            {/* TRICOLOR LINE */}
             <div className="flex justify-center mb-5">
               <div className="w-44 h-[2px] flex">
                 <div className="w-1/2 bg-orange-500" />
@@ -152,19 +272,26 @@ export default function NationalLandingPage({
               Secure. Analyse. Monitor. Protect.
             </p>
 
-            {/* LOGIN */}
-            {!isLoggedIn ? (
-              <button
-                onClick={() => setShowLogin(true)}
-                className="mt-7 inline-flex items-center gap-2 px-7 py-3 rounded-md bg-orange-500 hover:bg-orange-600 text-white font-semibold text-sm shadow-lg transition-all"
-              >
-                <LogIn size={17} />
-                LOGIN
-              </button>
-            ) : (
+            {/* NOT LOGGED IN */}
+            {!isLoggedIn && (
+              <div className="mt-7">
+                <button
+                  type="button"
+                  onClick={openLogin}
+                  className="inline-flex items-center gap-2 px-7 py-3 rounded-md bg-orange-500 hover:bg-orange-600 text-white font-semibold text-sm shadow-lg transition-all"
+                >
+                  <LogIn size={17} />
+                  LOGIN
+                </button>
+              </div>
+            )}
+
+            {/* LOGGED IN */}
+            {isLoggedIn && (
               <div className="mt-8 flex justify-center gap-3 flex-wrap">
 
                 <button
+                  type="button"
                   onClick={() => onNavigateTab("registry")}
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-md bg-blue-600 hover:bg-blue-700 font-semibold text-sm transition"
                 >
@@ -173,6 +300,7 @@ export default function NationalLandingPage({
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => onNavigateTab("upload_firmware")}
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-md bg-orange-500 hover:bg-orange-600 font-semibold text-sm transition"
                 >
@@ -182,6 +310,7 @@ export default function NationalLandingPage({
 
                 {isAdmin && (
                   <button
+                    type="button"
                     onClick={onGoToAuditLogs}
                     className="inline-flex items-center gap-2 px-6 py-3 rounded-md bg-white/10 hover:bg-white/20 border border-white/20 font-semibold text-sm transition"
                   >
@@ -196,8 +325,13 @@ export default function NationalLandingPage({
 
         {/* FOOTER */}
         <footer className="px-8 py-5 flex items-center justify-between text-[10px] text-blue-200/60 tracking-wider">
-          <span>GOVERNMENT NETWORK SECURITY INITIATIVE</span>
-          <span>© 2026 KAVACHX</span>
+          <span>
+            GOVERNMENT NETWORK SECURITY INITIATIVE
+          </span>
+
+          <span>
+            © 2026 KAVACHX
+          </span>
         </footer>
       </div>
 
@@ -206,40 +340,69 @@ export default function NationalLandingPage({
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center px-5">
           <div className="w-full max-w-md bg-[#071a35] border border-white/20 rounded-xl shadow-2xl p-7">
 
+            {/* MODAL HEADER */}
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-xl font-bold">
                   KavachX Login
                 </h2>
+
                 <p className="text-xs text-blue-200/70 mt-1">
                   Secure SOC authentication
                 </p>
               </div>
 
               <button
-                onClick={() => setShowLogin(false)}
-                className="text-white/60 hover:text-white"
+                type="button"
+                onClick={closeLogin}
+                disabled={isLoggingIn}
+                className="text-white/60 hover:text-white disabled:opacity-40"
               >
                 <X size={21} />
               </button>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-4">
+            {/* ERROR MESSAGE */}
+            {loginError && (
+              <div className="mb-5 rounded-md border border-red-400/30 bg-red-500/10 px-4 py-3 flex items-start gap-3 text-left">
+                <AlertCircle
+                  size={18}
+                  className="text-red-400 mt-0.5 shrink-0"
+                />
 
+                <div className="text-xs text-red-200">
+                  {loginError}
+                </div>
+              </div>
+            )}
+
+            {/* LOGIN FORM */}
+            <form
+              onSubmit={handleLogin}
+              className="space-y-4"
+            >
+
+              {/* EMAIL / USERNAME */}
               <div>
                 <label className="block text-xs text-blue-100 mb-2">
-                  Email
+                  Email / Username
                 </label>
 
                 <input
-                  type="email"
+                  type="text"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="analyst@kavachx.gov.in"
-                  className="w-full px-4 py-3 rounded-md bg-[#03132a] border border-white/15 outline-none focus:border-blue-500 text-sm"
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setLoginError("");
+                  }}
+                  placeholder="test@kavachx.com"
+                  disabled={isLoggingIn}
+                  autoComplete="username"
+                  className="w-full px-4 py-3 rounded-md bg-[#03132a] border border-white/15 outline-none focus:border-blue-500 text-sm disabled:opacity-60"
                 />
               </div>
 
+              {/* PASSWORD */}
               <div>
                 <label className="block text-xs text-blue-100 mb-2">
                   Password
@@ -248,20 +411,38 @@ export default function NationalLandingPage({
                 <input
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setLoginError("");
+                  }}
                   placeholder="••••••••"
-                  className="w-full px-4 py-3 rounded-md bg-[#03132a] border border-white/15 outline-none focus:border-blue-500 text-sm"
+                  disabled={isLoggingIn}
+                  autoComplete="current-password"
+                  className="w-full px-4 py-3 rounded-md bg-[#03132a] border border-white/15 outline-none focus:border-blue-500 text-sm disabled:opacity-60"
                 />
               </div>
 
+              {/* AUTHENTICATE BUTTON */}
               <button
                 type="submit"
-                className="w-full mt-2 py-3 rounded-md bg-orange-500 hover:bg-orange-600 font-semibold text-sm flex items-center justify-center gap-2 transition"
+                disabled={isLoggingIn}
+                className="w-full mt-2 py-3 rounded-md bg-orange-500 hover:bg-orange-600 disabled:bg-orange-500/50 disabled:cursor-not-allowed font-semibold text-sm flex items-center justify-center gap-2 transition"
               >
-                <LockKeyhole size={17} />
-                AUTHENTICATE
+                {isLoggingIn ? (
+                  <>
+                    <Loader2
+                      size={17}
+                      className="animate-spin"
+                    />
+                    AUTHENTICATING...
+                  </>
+                ) : (
+                  <>
+                    <LockKeyhole size={17} />
+                    AUTHENTICATE
+                  </>
+                )}
               </button>
-
             </form>
 
             <p className="text-[10px] text-center text-white/40 mt-5">
