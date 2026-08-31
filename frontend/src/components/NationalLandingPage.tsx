@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ShieldCheck,
   LogIn,
@@ -48,6 +48,29 @@ export default function NationalLandingPage({
 
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState("");
+
+  /*
+   * KAVACH TYPING ANIMATION
+   */
+  const [typedBrand, setTypedBrand] = useState("");
+
+  useEffect(() => {
+    const brand = "Kavach";
+    let index = 0;
+
+    const interval = window.setInterval(() => {
+      index += 1;
+      setTypedBrand(brand.slice(0, index));
+
+      if (index >= brand.length) {
+        window.clearInterval(interval);
+      }
+    }, 180);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, []);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -243,24 +266,25 @@ export default function NationalLandingPage({
               </div>
             </div>
 
-            {/* BRAND */}
-            <div className="flex justify-center items-center mb-3">
-              <h1 className="text-6xl md:text-7xl font-bold tracking-tight">
-                Kavach
-              </h1>
+         {/* BRAND */}
+<div className="relative flex justify-center items-center mb-3">
+ <h1 className="text-6xl md:text-7xl font-bold tracking-tight">
+  {typedBrand}
+  <span className="ml-1 animate-pulse text-white">|</span>
+</h1>
 
-              <span className="ml-2 px-2 py-1 text-[10px] font-bold bg-yellow-400 text-black rounded-sm">
-                BETA
-              </span>
-            </div>
+  <span className="absolute left-[calc(50%+120px)] md:left-[calc(50%+145px)] top-1/2 -translate-y-1/2 px-2 py-1 text-[10px] font-bold bg-yellow-400 text-black rounded-sm">
+    BETA
+  </span>
+</div>
 
-            {/* TRICOLOR LINE */}
-            <div className="flex justify-center mb-5">
-              <div className="w-44 h-[2px] flex">
-                <div className="w-1/2 bg-orange-500" />
-                <div className="w-1/2 bg-green-500" />
-              </div>
-            </div>
+{/* TRICOLOR LINE */}
+<div className="flex justify-center mb-5">
+  <div className="w-48 h-[3px] flex">
+    <div className="w-1/2 bg-orange-500" />
+    <div className="w-1/2 bg-green-500" />
+  </div>
+</div>
 
             {/* TITLE */}
             <h2 className="text-sm md:text-base font-semibold tracking-[0.18em] uppercase">
