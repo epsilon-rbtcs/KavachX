@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 
 from app.core.database import get_db
 from app.core.security import (
@@ -88,9 +89,15 @@ def login(
     request: LoginRequest,
     db: Session = Depends(get_db)
 ):
+    # Allow login using either username OR email
     user = (
         db.query(User)
-        .filter(User.username == request.username)
+        .filter(
+            or_(
+                User.username == request.username,
+                User.email == request.username
+            )
+        )
         .first()
     )
 
@@ -100,7 +107,7 @@ def login(
     ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password"
+            detail="Invalid username/email or password"
         )
 
     access_token = create_access_token(
@@ -113,4 +120,9 @@ def login(
     return {
         "access_token": access_token,
         "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "username": user.username,
+        }
     }
