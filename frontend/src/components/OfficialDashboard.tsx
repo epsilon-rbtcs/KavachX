@@ -456,25 +456,30 @@ export default function OfficialDashboard({
         setIsUploading(false);
         return;
       }
-    } catch (error) {
+       } catch (error) {
       console.error("Upload failed:", error);
-
-      /*
-       * The frontend remains usable for the demonstration even
-       * when the backend is unavailable.
-       */
-      console.warn(
-        "Backend unavailable. Creating local demonstration record."
-      );
+      alert("Backend upload failed. Please try again.");
+      setIsUploading(false);
+      return;
     }
 
-    const newRecord = generateFakeAnalysis(
-      selectedFile,
-      backendData
-    );
+    if (!backendData?.analysis_id) {
+      alert("Backend did not return an analysis ID.");
+      setIsUploading(false);
+      return;
+    }
+
+       const backendRecord = {
+      id: backendData.analysis_id,
+      fileName: selectedFile.name,
+      status: "Uploaded" as AnalysisStatus,
+      riskLevel: "None",
+      packets: 0,
+      bytes: 0,
+    };
 
     setAnalyses((previous) => [
-      newRecord,
+      backendRecord,
       ...previous,
     ]);
 
@@ -493,7 +498,7 @@ export default function OfficialDashboard({
 
       setAnalyses((previous) =>
         previous.map((analysis) =>
-          analysis.id === newRecord.id
+          analysis.id === backendData.analysis_id
             ? {
                 ...analysis,
                 status: "Analyzing",
@@ -502,12 +507,12 @@ export default function OfficialDashboard({
         )
       );
 
-      setScanningId(newRecord.id);
+      setScanningId(backendData.analysis_id);
 
       setTimeout(() => {
         setAnalyses((previous) =>
           previous.map((analysis) =>
-            analysis.id === newRecord.id
+            analysis.id === backendData.analysis_id
               ? {
                   ...analysis,
                   status: "Completed",
@@ -518,12 +523,10 @@ export default function OfficialDashboard({
 
         setScanningId(null);
 
-        const completedRecord = {
-          ...newRecord,
+        setActiveReport({
+          ...backendRecord,
           status: "Completed" as AnalysisStatus,
-        };
-
-        setActiveReport(completedRecord);
+        });
       }, 3500);
     }, 2500);
   };
